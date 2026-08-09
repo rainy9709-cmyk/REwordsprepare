@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>英语单词闪卡 · 生词本 & 测试</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .app-container {
+            max-width: 700px;
+            width: 100%;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 6px 12px rgba(0,0,0,0.05);
+            padding: 24px 20px 32px;
+            transition: all 0.2s;
+        }
+
+        /* 顶部导航 + 课程切换 */
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px 6px;
+            margin-bottom: 22px;
+        }
+
+        .course-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .course-btn {
+            background: #eef2f7;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1e293b;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .course-btn.active {
+            background: #1e293b;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .course-btn:active { transform: scale(0.96); }
+
+        .nav-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid #dce3ed;
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.15s;
+            background: white;
+        }
+
+        .icon-btn:active { background: #e9edf3; }
+        .icon-btn.star-btn { border-color: #fbbf24; color: #b45309; }
+        .icon-btn.star-btn.active { background: #fef3c7; border-color: #f59e0b; }
+
+        /* 卡片区域 */
+        .flashcard-wrapper {
+            perspective: 1200px;
+            margin: 12px 0 18px;
+            cursor: pointer;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            padding-bottom: 70%; /* 3:2 比例 */
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+            border-radius: 32px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.04);
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 32px;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 18px;
+            background: white;
+            border: 1px solid #eef2f7;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.02);
+            text-align: center;
+        }
+
+        .card-front {
+            background: linear-gradient(145deg, #ffffff, #fafcff);
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: #f8faff;
+            border: 1px solid #dce3ed;
+        }
+
+        .word-en {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: #0b1e33;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .word-phonetic {
+            font-size: 1.2rem;
+            color: #4b5b6e;
+            margin-top: 6px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .word-meaning {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #0b1e33;
+            word-break: break-word;
+            padding: 0 6px;
+        }
+
+        .word-part-of-speech {
+            font-size: 1rem;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .card-hint {
+            margin-top: 12px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            letter-spacing: 0.3px;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 12px;
+            width: 70%;
+        }
+
+        /* 底部控制栏 */
+        .bottom-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .left-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .right-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ctrl-btn {
+            background: white;
+            border: 1px solid #dce3ed;
+            border-radius: 30px;
+            padding: 8px 18px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #1e293b;
+            cursor: pointer;
+            transition: 0.12s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ctrl-btn:active { background: #eef2f7; transform: scale(0.96); }
+        .ctrl-btn.primary { background: #1e293b; color: white; border-color: #1e293b; }
+        .ctrl-btn.primary:active { background: #0f172a; }
+
+        /* 生词本弹出 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal-box {
+            background: white;
+            max-width: 440px;
+            width: 92%;
+            max-height: 70vh;
+            border-radius: 36px;
+            padding: 24px 20px 20px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .word-list {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+        }
+
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 4px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .word-item span { font-weight: 500; }
+        .remove-word {
+            background: none;
+            border: none;
+            color: #b91c1c;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 30px;
+            background: #fee2e2;
+            font-size: 0.8rem;
+        }
+
+        .empty-msg { color: #94a3b8; text-align: center; padding: 30px 0; }
+
+        /* 测试模式 */
+        .test-area {
+            margin-top: 20px;
+            border-top: 2px dashed #e2e8f0;
+            padding-top: 20px;
+            display: none;
+        }
+
+        .test-area.active { display: block; }
+
+        .test-prompt {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .test-word {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0b1e33;
+        }
+
+        .test-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 12px 0;
+        }
+
+        .test-opt {
+            background: white;
+            border: 1px solid #dce3ed;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.1s;
+            min-width: 100px;
+        }
+
+        .test-opt:active { background: #eef2f7; }
+        .test-opt.correct { background: #bbf7d0; border-color: #22c55e; }
+        .test-opt.wrong { background: #fecaca; border-color: #ef4444; }
+
+        .test-feedback {
+            font-weight: 500;
+            margin-top: 6px;
+            min-height: 2rem;
+        }
+
+        /* 自适应 */
+        @media (max-width: 500px) {
+            .app-container { padding: 16px; }
+            .word-en { font-size: 1.8rem; }
+            .word-meaning { font-size: 1.6rem; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .course-selector { justify-content: center; }
+            .nav-actions { justify-content: center; }
+            .bottom-controls { flex-direction: column; align-items: stretch; }
+            .left-group, .right-group { justify-content: center; }
+            .ctrl-btn { flex: 1; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container" id="app">
+    <!-- 顶部 -->
+    <div class="top-bar">
+        <div class="course-selector" id="courseSelector">
+            <button class="course-btn active" data-unit="Unit1A">Unit1A</button>
+            <button class="course-btn" data-unit="Unit1B">Unit1B</button>
+            <button class="course-btn" data-unit="Unit2A">Unit2A</button>
+            <button class="course-btn" data-unit="Unit2B">Unit2B</button>
+            <button class="course-btn" data-unit="Unit3A">Unit3A</button>
+            <button class="course-btn" data-unit="Unit3B">Unit3B</button>
+            <button class="course-btn" data-unit="Unit4A">Unit4A</button>
+            <button class="course-btn" data-unit="Unit4B">Unit4B</button>
+            <button class="course-btn" data-unit="Unit5A">Unit5A</button>
+            <button class="course-btn" data-unit="Unit5B">Unit5B</button>
+            <button class="course-btn" data-unit="Unit6A">Unit6A</button>
+            <button class="course-btn" data-unit="Unit6B">Unit6B</button>
+            <button class="course-btn" data-unit="Unit7A">Unit7A</button>
+            <button class="course-btn" data-unit="Unit7B">Unit7B</button>
+            <button class="course-btn" data-unit="Unit8A">Unit8A</button>
+            <button class="course-btn" data-unit="Unit8B">Unit8B</button>
+            <button class="course-btn" data-unit="Unit9A">Unit9A</button>
+            <button class="course-btn" data-unit="Unit9B">Unit9B</button>
+            <button class="course-btn" data-unit="Unit10A">Unit10A</button>
+            <button class="course-btn" data-unit="Unit10B">Unit10B</button>
+        </div>
+        <div class="nav-actions">
+            <button class="icon-btn" id="starBtn">⭐</button>
+            <button class="icon-btn" id="bookmarkBtn">📖 生词本</button>
+        </div>
+    </div>
+
+    <!-- 卡片 -->
+    <div class="flashcard-wrapper" id="cardWrapper">
+        <div class="flashcard" id="flashcard">
+            <div class="card-face card-front" id="frontFace">
+                <div class="word-en" id="wordEn">mystery</div>
+                <div class="word-phonetic" id="wordPhonetic">/ˈmɪstəri/</div>
+                <div class="card-hint">👆 点击翻转 · 点击单词发音</div>
+            </div>
+            <div class="card-face card-back" id="backFace">
+                <div class="word-meaning" id="wordMeaning">谜</div>
+                <div class="word-part-of-speech" id="wordPos">n.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="bottom-controls">
+        <div class="left-group">
+            <button class="ctrl-btn" id="prevBtn">◀ 上一个</button>
+            <button class="ctrl-btn" id="nextBtn">下一个 ▶</button>
+            <button class="ctrl-btn" id="randomBtn">🎲 随机</button>
+        </div>
+        <div class="right-group">
+            <button class="ctrl-btn" id="testToggleBtn">📝 测试</button>
+        </div>
+    </div>
+
+    <!-- 测试区域 -->
+    <div class="test-area" id="testArea">
+        <div class="test-prompt">
+            <div class="test-word" id="testWord">mystery</div>
+            <div class="test-options" id="testOptions"></div>
+            <div class="test-feedback" id="testFeedback"></div>
+        </div>
+    </div>
+
+    <!-- 生词本模态 -->
+    <div class="modal-overlay" id="bookmarkModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>⭐ 生词本</span>
+                <button class="modal-close" id="closeBookmark">&times;</button>
+            </div>
+            <div class="word-list" id="bookmarkList"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function() {
+        // ---------- 数据 (从图片汇总) ----------
+        // 简化：所有课程单元数据 仅保留 word, phonetic, meaning, pos (部分)
+        // 为节省空间，只录入完整数据 (所有课程)
+        const COURSE_DATA = {
+            "Unit1A": [
+                { word: "mystery", phonetic: "/ˈmɪstəri/", meaning: "谜", pos: "n." },
+                { word: "astronomer", phonetic: "/əˈstrɒnəmə/", meaning: "天文学家", pos: "n." },
+                { word: "asteroid", phonetic: "/ˈæstərɔɪd/", meaning: "小行星", pos: "n." },
+                { word: "strange", phonetic: "/streɪndʒ/", meaning: "奇怪的", pos: "adj." },
+                { word: "object", phonetic: "/ˈɒbdʒɪkt/", meaning: "物体", pos: "n." },
+                { word: "solar system", phonetic: "/ˈsəʊlə ˈsɪstəm/", meaning: "太阳系", pos: "n." },
+                { word: "thin", phonetic: "/θɪn/", meaning: "薄的", pos: "adj." },
+                { word: "cucumber", phonetic: "/ˈkjuːkʌmbə/", meaning: "黄瓜", pos: "n." },
+                { word: "speed", phonetic: "/spiːd/", meaning: "速度", pos: "n." },
+                { word: "direction", phonetic: "/dəˈrekʃn/", meaning: "方向", pos: "n." },
+                { word: "surprising", phonetic: "/səˈpraɪzɪŋ/", meaning: "令人惊讶的", pos: "adj." },
+                { word: "interstellar", phonetic: "/ˌɪntəˈstelə/", meaning: "星际的", pos: "adj." },
+                { word: "from afar", phonetic: "/frəm əˈfɑː/", meaning: "从远处", pos: "adv." },
+                { word: "exactly", phonetic: "/ɪɡˈzæktli/", meaning: "精确地", pos: "adv." },
+                { word: "simplest", phonetic: "/ˈsɪmplɪst/", meaning: "最简单的", pos: "adj." },
+                { word: "a piece of", phonetic: "/ə piːs ɒv/", meaning: "一块", pos: "phr." },
+                { word: "knock", phonetic: "/nɒk/", meaning: "敲击", pos: "v." },
+                { word: "far-off", phonetic: "/ˈfɑːr ɒf/", meaning: "遥远的", pos: "adj." },
+                { word: "increase", phonetic: "/ɪnˈkriːs/", meaning: "增加", pos: "v." },
+                { word: "passing", phonetic: "/ˈpɑːsɪŋ/", meaning: "路过的", pos: "adj." },
+                { word: "suggest", phonetic: "/səˈdʒest/", meaning: "建议", pos: "v." },
+                { word: "theory", phonetic: "/ˈθɪəri/", meaning: "理论", pos: "n." },
+                { word: "alien", phonetic: "/ˈeɪliən/", meaning: "外星人", pos: "n." },
+                { word: "technology", phonetic: "/tekˈnɒlədʒi/", meaning: "技术", pos: "n." },
+                { word: "professor", phonetic: "/prəˈfesə/", meaning: "教授", pos: "n." },
+                { word: "believe", phonetic: "/bɪˈliːv/", meaning: "相信", pos: "v." },
+                { word: "explain", phonetic: "/ɪkˈspleɪn/", meaning: "解释", pos: "v." },
+                { word: "change", phonetic: "/tʃeɪndʒ/", meaning: "改变", pos: "v." },
+                { word: "university", phonetic: "/ˌjuːnɪˈvɜːsɪti/", meaning: "大学", pos: "n." },
+                { word: "maybe", phonetic: "/ˈmeɪbi/", meaning: "也许", pos: "adv." },
+                { word: "spaceship", phonetic: "/ˈspeɪsʃɪp/", meaning: "宇宙飞船", pos: "n." },
+                { word: "explore", phonetic: "/ɪkˈsplɔː/", meaning: "探索", pos: "v." },
+                { word: "possibility", phonetic: "/ˌpɒsəˈbɪləti/", meaning: "可能性", pos: "n." },
+                { word: "consider", phonetic: "/kənˈsɪdə/", meaning: "考虑", pos: "v." },
+                { word: "no longer", phonetic: "/nəʊ ˈlɒŋɡə/", meaning: "不再", pos: "adv." },
+                { word: "Earth", phonetic: "/ɜːθ/", meaning: "地球", pos: "n." },
+                { word: "continue", phonetic: "/kənˈtɪnjuː/", meaning: "继续", pos: "v." },
+                { word: "altogether", phonetic: "/ˌɔːltəˈɡeðə/", meaning: "完全地", pos: "adv." },
+                { word: "likely", phonetic: "/ˈlaɪkli/", meaning: "可能的", pos: "adj." },
+                { word: "enter", phonetic: "/ˈentə/", meaning: "进入", pos: "v." },
+                { word: "reach", phonetic: "/riːtʃ/", meaning: "到达", pos: "v." },
+                { word: "times", phonetic: "/taɪmz/", meaning: "次数", pos: "n." },
+                { word: "unusual", phonetic: "/ʌnˈjuːʒuəl/", meaning: "不寻常的", pos: "adj." },
+                { word: "push down", phonetic: "/pʊʃ daʊn/", meaning: "压下", pos: "v. phr." },
+                { word: "thick", phonetic: "/θɪk/", meaning: "厚的", pos: "adj." },
+                { word: "seem", phonetic: "/siːm/", meaning: "看起来", pos: "v." },
+                { word: "spinning", phonetic: "/ˈspɪnɪŋ/", meaning: "旋转的", pos: "adj." },
+                { word: "pass", phonetic: "/pɑːs/", meaning: "经过", pos: "v." },
+                { word: "however", phonetic: "/haʊˈevə/", meaning: "然而", pos: "adv." },
+                { word: "size", phonetic: "/saɪz/", meaning: "尺寸", pos: "n." }
+            ],
+            "Unit1B": [
+                { word: "lost", phonetic: "/lɒst/", meaning: "迷路的", pos: "adj." },
+                { word: "writer", phonetic: "/ˈraɪtə/", meaning: "作家", pos: "n." },
+                { word: "write", phonetic: "/raɪt/", meaning: "写", pos: "v." },
+                { word: "disappear", phonetic: "/ˌdɪsəˈpɪə/", meaning: "消失", pos: "v." },
+                { word: "hear", phonetic: "/hɪə/", meaning: "听见", pos: "v." },
+                { word: "become", phonetic: "/bɪˈkʌm/", meaning: "成为", pos: "v." },
+                { word: "greedy", phonetic: "/ˈɡriːdi/", meaning: "贪婪的", pos: "adj." },
+                { word: "earthquake", phonetic: "/ˈɜːθkweɪk/", meaning: "地震", pos: "n." },
+                { word: "wave", phonetic: "/weɪv/", meaning: "波浪", pos: "n." },
+                { word: "begin", phonetic: "/bɪˈɡɪn/", meaning: "开始", pos: "v." },
+                { word: "strike", phonetic: "/straɪk/", meaning: "袭击", pos: "v." },
+                { word: "finally", phonetic: "/ˈfaɪnəli/", meaning: "最终", pos: "adv." },
+                { word: "sink", phonetic: "/sɪŋk/", meaning: "下沉", pos: "v." },
+                { word: "explorer", phonetic: "/ɪkˈsplɔːrə/", meaning: "探险家", pos: "n." },
+                { word: "report", phonetic: "/rɪˈpɔːt/", meaning: "报告", pos: "n./v." },
+                { word: "remains", phonetic: "/rɪˈmeɪnz/", meaning: "遗迹", pos: "n." },
+                { word: "however", phonetic: "/haʊˈevə/", meaning: "然而", pos: "adv." },
+                { word: "realize", phonetic: "/ˈrɪəlaɪz/", meaning: "意识到", pos: "v." },
+                { word: "structure", phonetic: "/ˈstrʌktʃə/", meaning: "结构", pos: "n." },
+                { word: "find", phonetic: "/faɪnd/", meaning: "找到", pos: "v." },
+                { word: "natural", phonetic: "/ˈnætʃrəl/", meaning: "自然的", pos: "adj." },
+                { word: "man-made", phonetic: "/ˈmæn meɪd/", meaning: "人造的", pos: "adj." },
+                { word: "similar", phonetic: "/ˈsɪmɪlə/", meaning: "相似的", pos: "adj." },
+                { word: "simply", phonetic: "/ˈsɪmpli/", meaning: "简单地", pos: "adv." },
+                { word: "a piece of", phonetic: "/ə piːs ɒv/", meaning: "一块", pos: "phr." },
+                { word: "solid", phonetic: "/ˈsɒlɪd/", meaning: "固体的", pos: "adj." },
+                { word: "evidence", phonetic: "/ˈevɪdəns/", meaning: "证据", pos: "n." },
+                { word: "solid evidence", phonetic: "/ˈsɒlɪd ˈevɪdəns/", meaning: "确凿的证据", pos: "phr." }
+            ],
+            "Unit2A": [
+                { word: "extremes", phonetic: "/ɪkˈstriːmz/", meaning: "极端", pos: "n." },
+                { word: "unusual", phonetic: "/ʌnˈjuːʒuəl/", meaning: "不寻常的", pos: "adj." },
+                { word: "spicy", phonetic: "/ˈspaɪsi/", meaning: "辣的", pos: "adj." },
+                { word: "spiciest", phonetic: "/ˈspaɪsɪɪst/", meaning: "最辣的", pos: "adj." },
+                { word: "contest", phonetic: "/ˈkɒntest/", meaning: "比赛", pos: "n." },
+                { word: "competition", phonetic: "/ˌkɒmpɪˈtɪʃn/", meaning: "竞争，竞赛", pos: "n." },
+                { word: "take place", phonetic: "/teɪk pleɪs/", meaning: "发生", pos: "phr." },
+                { word: "speed", phonetic: "/spiːd/", meaning: "速度", pos: "n." },
+                { word: "competitive", phonetic: "/kəmˈpetətɪv/", meaning: "有竞争力的", pos: "adj." },
+                { word: "exactly", phonetic: "/ɪɡˈzæktli/", meaning: "精确地", pos: "adv." },
+                { word: "suggest", phonetic: "/səˈdʒest/", meaning: "建议", pos: "v." },
+                { word: "contestant", phonetic: "/kənˈtestənt/", meaning: "参赛者", pos: "n." },
+                { word: "as much as", phonetic: "/æz mʌtʃ æz/", meaning: "和……一样多", pos: "phr." },
+                { word: "within a time limit", phonetic: "/wɪˈðɪn ə taɪm ˈlɪmɪt/", meaning: "在时间限制内", pos: "phr." },
+                { word: "involve", phonetic: "/ɪnˈvɒlv/", meaning: "涉及", pos: "v." },
+                { word: "various", phonetic: "/ˈveəriəs/", meaning: "各种各样的", pos: "adj." },
+                { word: "chili pepper", phonetic: "/ˈtʃɪli ˈpepə/", meaning: "辣椒", pos: "n." },
+                { word: "prize", phonetic: "/praɪz/", meaning: "奖品", pos: "n." },
+                { word: "event", phonetic: "/ɪˈvent/", meaning: "活动，事件", pos: "n." },
+                { word: "according to", phonetic: "/əˈkɔːdɪŋ tuː/", meaning: "根据", pos: "phr." },
+                { word: "legend", phonetic: "/ˈledʒənd/", meaning: "传说；传奇", pos: "n." },
+                { word: "tradition", phonetic: "/trəˈdɪʃn/", meaning: "传统", pos: "n." },
+                { word: "begin", phonetic: "/bɪˈɡɪn/", meaning: "开始", pos: "v." },
+                { word: "immigrants", phonetic: "/ˈɪmɪɡrənts/", meaning: "移民", pos: "n." },
+                { word: "argue", phonetic: "/ˈɑːɡjuː/", meaning: "争论", pos: "v." },
+                { word: "finally", phonetic: "/ˈfaɪnəli/", meaning: "最后", pos: "adv." },
+                { word: "work out", phonetic: "/wɜːk aʊt/", meaning: "解决", pos: "phr." },
+                { word: "decide", phonetic: "/dɪˈsaɪd/", meaning: "决定", pos: "v." },
+                { word: "champion", phonetic: "/ˈtʃæmpiən/", meaning: "冠军", pos: "n." },
+                { word: "current", phonetic: "/ˈkʌrənt/", meaning: "当前的", pos: "adj." },
+                { word: "hold", phonetic: "/həʊld/", meaning: "拥有", pos: "v." },
+                { word: "record", phonetic: "/ˈrekɔːd/", meaning: "记录", pos: "n." },
+                { word: "hold the world record", phonetic: "/həʊld ðə wɜːld ˈrekɔːd/", meaning: "保持世界纪录", pos: "phr." },
+                { word: "less than", phonetic: "/les ðən/", meaning: "少于", pos: "phr." },
+                { word: "however", phonetic: "/haʊˈevə/", meaning: "然而", pos: "adv." },
+                { word: "type", phonetic: "/taɪp/", meaning: "类型", pos: "n." },
+                { word: "different types of", phonetic: "/ˈdɪfrənt taɪps ɒv/", meaning: "不同种类的", pos: "phr." },
+                { word: "unhealthy", phonetic: "/ʌnˈhelθi/", meaning: "不健康的", pos: "adj." },
+                { word: "win the event", phonetic: "/wɪn ði ɪˈvent/", meaning: "赢得比赛", pos: "phr." },
+                { word: "fighter", phonetic: "/ˈfaɪtə/", meaning: "战士", pos: "n." },
+                { word: "athletes", phonetic: "/ˈæθliːts/", meaning: "运动员", pos: "n." },
+                { word: "successful", phonetic: "/səkˈsesfl/", meaning: "成功的", pos: "adj." },
+                { word: "identify", phonetic: "/aɪˈdentɪfaɪ/", meaning: "识别", pos: "v." },
+                { word: "purpose", phonetic: "/ˈpɜːpəs/", meaning: "目的", pos: "n." },
+                { word: "describe", phonetic: "/dɪˈskraɪb/", meaning: "描述", pos: "v." },
+                { word: "explain", phonetic: "/ɪkˈspleɪn/", meaning: "解释", pos: "v." },
+                { word: "in bad taste", phonetic: "/ɪn bæd teɪst/", meaning: "不得体，品味低劣", pos: "phr." }
+            ],
+            "Unit2B": [
+                { word: "experience", phonetic: "/ɪkˈspɪəriəns/", meaning: "经验，经历", pos: "n." },
+                { word: "start", phonetic: "/stɑːt/", meaning: "开始", pos: "v." },
+                { word: "chili pepper", phonetic: "/ˈtʃɪli ˈpepə/", meaning: "辣椒", pos: "n." },
+                { word: "dishes", phonetic: "/ˈdɪʃɪz/", meaning: "菜肴", pos: "n." },
+                { word: "plant", phonetic: "/plænt/", meaning: "植物", pos: "n." },
+                { word: "contain", phonetic: "/kənˈteɪn/", meaning: "包含", pos: "v." },
+                { word: "health", phonetic: "/helθ/", meaning: "健康", pos: "n." },
+                { word: "breathe", phonetic: "/briːð/", meaning: "呼吸", pos: "v." },
+                { word: "keep fit", phonetic: "/kiːp fɪt/", meaning: "保持健康", pos: "phr." },
+                { word: "hungry", phonetic: "/ˈhʌŋɡri/", meaning: "饥饿的", pos: "adj." },
+                { word: "calories", phonetic: "/ˈkæləriz/", meaning: "卡路里", pos: "n." },
+                { word: "measure", phonetic: "/ˈmeʒə/", meaning: "测量", pos: "v." },
+                { word: "painful", phonetic: "/ˈpeɪnfl/", meaning: "痛苦的", pos: "adj." },
+                { word: "famous", phonetic: "/ˈfeɪməs/", meaning: "著名的", pos: "adj." },
+                { word: "begin", phonetic: "/bɪˈɡɪn/", meaning: "开始", pos: "v." },
+                { word: "honest", phonetic: "/ˈɒnɪst/", meaning: "诚实的", pos: "adj." },
+                { word: "barely", phonetic: "/ˈbeəli/", meaning: "勉强", pos: "adv." },
+                { word: "notice", phonetic: "/ˈnəʊtɪs/", meaning: "注意", pos: "v." },
+                { word: "scientist", phonetic: "/ˈsaɪəntɪst/", meaning: "科学家", pos: "n." },
+                { word: "rate", phonetic: "/reɪt/", meaning: "速度，率", pos: "n." }
+            ],
+            "Unit3A": [
+                { word: "astronomer", phonetic: "/əˈstrɒnəmə/", meaning: "天文学家", pos: "n." },
+                { word: "prepare", phonetic: "/prɪˈpeə/", meaning: "准备", pos: "v." },
+                { word: "observatory", phonetic: "/əbˈzɜːvətri/", meaning: "天文台，观测站", pos: "n." },
+                { word: "achieve", phonetic: "/əˈtʃiːv/", meaning: "实现，达到", pos: "v." },
+                { word: "lifelong", phonetic: "/ˈlaɪflɒŋ/", meaning: "终生的", pos: "adj." },
+                { word: "goal", phonetic: "/ɡəʊl/", meaning: "目标", pos: "n." },
+                { word: "archeologist", phonetic: "/ˌɑːkiˈɒlədʒɪst/", meaning: "考古学家", pos: "n." },
+                { word: "challenge", phonetic: "/ˈtʃælɪndʒ/", meaning: "挑战", pos: "n." },
+                { word: "digging", phonetic: "/ˈdɪɡɪŋ/", meaning: "挖掘", pos: "n." },
+                { word: "past", phonetic: "/pɑːst/", meaning: "过去", pos: "n." },
+                { word: "watch video", phonetic: "/wɒtʃ ˈvɪdiəʊ/", meaning: "看视频", pos: "phr." },
+                { word: "recreate", phonetic: "/ˌriːkriˈeɪt/", meaning: "重现", pos: "v." },
+                { word: "discovery", phonetic: "/dɪˈskʌvəri/", meaning: "发现", pos: "n." },
+                { word: "tomb", phonetic: "/tuːm/", meaning: "坟墓", pos: "n." },
+                { word: "remember", phonetic: "/rɪˈmembə/", meaning: "记得", pos: "v." },
+                { word: "peering through", phonetic: "/ˈpɪərɪŋ θruː/", meaning: "透过……凝视", pos: "phr." },
+                { word: "narrow", phonetic: "/ˈnærəʊ/", meaning: "狭窄的", pos: "adj." },
+                { word: "wonderful", phonetic: "/ˈwʌndəfl/", meaning: "美好的", pos: "adj." },
+                { word: "moment", phonetic: "/ˈməʊmənt/", meaning: "时刻", pos: "n." },
+                { word: "lucky", phonetic: "/ˈlʌki/", meaning: "幸运的", pos: "adj." },
+                { word: "Egypt", phonetic: "/ˈiːdʒɪpt/", meaning: "埃及", pos: "n." },
+                { word: "exciting", phonetic: "/ɪkˈsaɪtɪŋ/", meaning: "令人兴奋的", pos: "adj." },
+                { word: "bury", phonetic: "/ˈberi/", meaning: "埋葬", pos: "v." },
+                { word: "a piece of", phonetic: "/ə piːs ɒv/", meaning: "一片", pos: "phr." },
+                { word: "history", phonetic: "/ˈhɪstri/", meaning: "历史", pos: "n." },
+                { word: "amazing", phonetic: "/əˈmeɪzɪŋ/", meaning: "令人惊奇的", pos: "adj." },
+                { word: "decided", phonetic: "/dɪˈsaɪdɪd/", meaning: "决定（过去式）", pos: "v." },
+                { word: "happen", phonetic: "/ˈhæpən/", meaning: "发生", pos: "v." },
+                { word: "university", phonetic: "/ˌjuːnɪˈvɜːsɪti/", meaning: "大学", pos: "n." },
+                { word: "qualified", phonetic: "/ˈkwɒlɪfaɪd/", meaning: "合格的", pos: "adj." },
+                { word: "get married", phonetic: "/ɡet ˈmærid/", meaning: "结婚", pos: "phr." },
+                { word: "applied for", phonetic: "/əˈplaɪd fɔː/", meaning: "申请了", pos: "phr." },
+                { word: "reply", phonetic: "/rɪˈplaɪ/", meaning: "回复", pos: "v." },
+                { word: "finally", phonetic: "/ˈfaɪnəli/", meaning: "最后", pos: "adv." },
+                { word: "start", phonetic: "/stɑːt/", meaning: "开始", pos: "v." },
+                { word: "excavation", phonetic: "/ˌekskəˈveɪʃn/", meaning: "挖掘", pos: "n." },
+                { word: "think about", phonetic: "/θɪŋk əˈbaʊt/", meaning: "考虑", pos: "phr." },
+                { word: "career", phonetic: "/kəˈrɪə/", meaning: "职业", pos: "n." },
+                { word: "never", phonetic: "/ˈnevə/", meaning: "从不", pos: "adv." },
+                { word: "give up", phonetic: "/ɡɪv ʌp/", meaning: "放弃", pos: "phr." },
+                { word: "keep trying", phonetic: "/kiːp ˈtraɪɪŋ/", meaning: "继续努力", pos: "phr." },
+                { word: "at the beginning", phonetic: "/æt ðə bɪˈɡɪnɪŋ/", meaning: "在开始时", pos: "phr." },
+                { word: "hurt", phonetic: "/hɜːt/", meaning: "伤害", pos: "v." },
+                { word: "stronger", phonetic: "/ˈstrɒŋɡə/", meaning: "更强的", pos: "adj." },
+                { word: "actually", phonetic: "/ˈæktʃuəli/", meaning: "实际上", pos: "adv." },
+                { word: "follow", phonetic: "/ˈfɒləʊ/", meaning: "跟随", pos: "v." },
+                { word: "overcome", phonetic: "/ˌəʊvəˈkʌm/", meaning: "克服", pos: "v." },
+                { word: "in the end", phonetic: "/ɪn ði ˈend/", meaning: "最终", pos: "phr." },
+                { word: "focus on", phonetic: "/ˈfəʊkəs ɒn/", meaning: "集中于", pos: "phr." },
+                { word: "stress", phonetic: "/stres/", meaning: "压力", pos: "n." }
+            ],
+            "Unit3B": [
+                { word: "take a photo", phonetic: "/teɪk ə ˈfəʊtəʊ/", meaning: "拍照片", pos: "phr." },
+                { word: "photographer", phonetic: "/fəˈtɒɡrəfə/", meaning: "摄影师", pos: "n." },
+                { word: "Antarctica", phonetic: "/ænˈtæktɪkə/", meaning: "南极洲", pos: "n." },
+                { word: "advice", phonetic: "/ədˈvaɪs/", meaning: "建议", pos: "n." },
+                { word: "difficult", phonetic: "/ˈdɪfɪkəlt/", meaning: "困难的", pos: "adj." },
+                { word: "prepare", phonetic: "/prɪˈpeə/", meaning: "准备", pos: "v." },
+                { word: "passionate", phonetic: "/ˈpæʃənət/", meaning: "充满热情的", pos: "adj." },
+                { word: "get the shot", phonetic: "/ɡet ðə ʃɒt/", meaning: "拍到照片", pos: "phr." },
+                { word: "interview", phonetic: "/ˈɪntəvjuː/", meaning: "采访，面试", pos: "n." },
+                { word: "writer", phonetic: "/ˈraɪtə/", meaning: "作家", pos: "n." },
+                { word: "image", phonetic: "/ˈɪmɪdʒ/", meaning: "图像，影像", pos: "n." },
+                { word: "photography", phonetic: "/fəˈtɒɡrəfi/", meaning: "摄影", pos: "n." },
+                { word: "newspaper", phonetic: "/ˈnjuːzpeɪpə/", meaning: "报纸", pos: "n." },
+                { word: "send", phonetic: "/send/", meaning: "发送", pos: "v." },
+                { word: "lead to", phonetic: "/liːd tuː/", meaning: "导致", pos: "phr." },
+                { word: "enough", phonetic: "/ɪˈnʌf/", meaning: "足够的", pos: "adj." },
+                { word: "scientist", phonetic: "/ˈsaɪəntɪst/", meaning: "科学家", pos: "n." },
+                { word: "spend", phonetic: "/spend/", meaning: "花费", pos: "v." },
+                { word: "several", phonetic: "/ˈsevrəl/", meaning: "几个的", pos: "adj." },
+                { word: "technology", phonetic: "/tekˈnɒlədʒi/", meaning: "科技", pos: "n." },
+                { word: "mean", phonetic: "/miːn/", meaning: "意味，意思", pos: "v." },
+                { word: "free", phonetic: "/friː/", meaning: "自由的", pos: "adj." },
+                { word: "cost", phonetic: "/kɒst/", meaning: "成本，费用", pos: "n." },
+                { word: "paid for", phonetic: "/peɪd fɔː/", meaning: "支付了", pos: "phr." },
+                { word: "project", phonetic: "/ˈprɒdʒekt/", meaning: "项目", pos: "n." },
+                { word: "situation", phonetic: "/ˌsɪtʃuˈeɪʃn/", meaning: "情况", pos: "n." },
+                { word: "thoughtfully", phonetic: "/ˈθɔːtfəli/", meaning: "深思熟虑地", pos: "adv." },
+                { word: "curious", phonetic: "/ˈkjʊəriəs/", meaning: "好奇的", pos: "adj." },
+                { word: "reason", phonetic: "/ˈriːzn/", meaning: "理由", pos: "n." }
+            ],
+            "Unit4A": [
+                { word: "shipwreck", phonetic: "/ˈʃɪprek/", meaning: "船只失事", pos: "n." },
+                { word: "diver", phonetic: "/ˈdaɪvə/", meaning: "潜水员", pos: "n." },
+                { word: "investigate", phonetic: "/ɪnˈvestɪɡeɪt/", meaning: "调查", pos: "v." },
+                { word: "wreck", phonetic: "/rek/", meaning: "残骸", pos: "n." },
+                { word: "passenger", phonetic: "/ˈpæsɪndʒə/", meaning: "乘客", pos: "n." },
+                { word: "explore", phonetic: "/ɪkˈsplɔː/", meaning: "探索", pos: "v." },
+                { word: "iceberg", phonetic: "/ˈaɪsbɜːɡ/", meaning: "冰山", pos: "n." },
+                { word: "lifeboat", phonetic: "/ˈlaɪfbəʊt/", meaning: "救生艇", pos: "n." },
+                { word: "lifelong", phonetic: "/ˈlaɪflɒŋ/", meaning: "终生的", pos: "adj." },
+                { word: "dream", phonetic: "/driːm/", meaning: "梦想", pos: "n." },
+                { word: "come true", phonetic: "/kʌm truː/", meaning: "实现", pos: "phr." },
+                { word: "main", phonetic: "/meɪn/", meaning: "主要的", pos: "adj." },
+                { word: "video camera", phonetic: "/ˈvɪdiəʊ ˈkæmərə/", meaning: "摄像机", pos: "n." },
+                { word: "undersea", phonetic: "/ˌʌndəˈsiː/", meaning: "海底的", pos: "adj." },
+                { word: "items", phonetic: "/ˈaɪtəmz/", meaning: "物品", pos: "n." },
+                { word: "reminder", phonetic: "/rɪˈmaɪndə/", meaning: "提醒物", pos: "n." },
+                { word: "death", phonetic: "/deθ/", meaning: "死亡", pos: "n." },
+                { word: "reach", phonetic: "/riːtʃ/", meaning: "到达", pos: "v." },
+                { word: "submarine", phonetic: "/ˌsʌbməˈriːn/", meaning: "潜艇", pos: "n." },
+                { word: "return", phonetic: "/rɪˈtɜːn/", meaning: "返回", pos: "v." },
+                { word: "condition", phonetic: "/kənˈdɪʃn/", meaning: "状况", pos: "n." },
+                { word: "pieces of", phonetic: "/ˈpiːsɪz əv/", meaning: "几块", pos: "phr." },
+                { word: "agree", phonetic: "/əˈɡriː/", meaning: "同意", pos: "v." },
+                { word: "instead", phonetic: "/ɪnˈsted/", meaning: "代替", pos: "adv." },
+                { word: "believe", phonetic: "/bɪˈliːv/", meaning: "相信", pos: "v." },
+                { word: "remember", phonetic: "/rɪˈmembə/", meaning: "记住", pos: "v." },
+                { word: "protection", phonetic: "/prəˈtekʃn/", meaning: "保护", pos: "n." },
+                { word: "coast", phonetic: "/kəʊst/", meaning: "海岸", pos: "n." },
+                { word: "happen", phonetic: "/ˈhæpən/", meaning: "发生", pos: "v." }
+            ],
+            "Unit4B": [
+                { word: "expedition", phonetic: "/ˌekspəˈdɪʃn/", meaning: "探险", pos: "n." },
+                { word: "explore", phonetic: "/ɪkˈsplɔː/", meaning: "探索", pos: "v." },
+                { word: "battery", phonetic: "/ˈbætəri/", meaning: "电池", pos: "n." },
+                { word: "got stuck", phonetic: "/ɡɒt stʌk/", meaning: "卡住了", pos: "phr." },
+                { word: "worse", phonetic: "/wɜːs/", meaning: "更糟的", pos: "adj." },
+                { word: "damaged", phonetic: "/ˈdæmɪdʒd/", meaning: "受损的", pos: "adj." },
+                { word: "dangerous", phonetic: "/ˈdeɪndʒərəs/", meaning: "危险的", pos: "adj." },
+                { word: "explode", phonetic: "/ɪkˈspləʊd/", meaning: "爆炸", pos: "v." },
+                { word: "harm", phonetic: "/hɑːm/", meaning: "伤害", pos: "v." },
+                { word: "supply", phonetic: "/səˈplaɪ/", meaning: "提供；供给", pos: "v." },
+                { word: "coat hanger", phonetic: "/kəʊt ˈhæŋə/", meaning: "衣架", pos: "n." },
+                { word: "plan", phonetic: "/plæn/", meaning: "计划", pos: "n." },
+                { word: "hook", phonetic: "/hʊk/", meaning: "钩子", pos: "n." },
+                { word: "pull", phonetic: "/pʊl/", meaning: "拉", pos: "v." },
+                { word: "lift", phonetic: "/lɪft/", meaning: "举起", pos: "v." },
+                { word: "place", phonetic: "/pleɪs/", meaning: "放置", pos: "v." },
+                { word: "ocean bottom", phonetic: "/ˈəʊʃn ˈbɒtəm/", meaning: "海底", pos: "n." },
+                { word: "totally", phonetic: "/ˈtəʊtəli/", meaning: "完全地", pos: "adv." },
+                { word: "accidentally", phonetic: "/ˌæksɪˈdentli/", meaning: "意外地", pos: "adv." },
+                { word: "suddenly", phonetic: "/ˈsʌdənli/", meaning: "突然地", pos: "adv." },
+                { word: "complete", phonetic: "/kəmˈpliːt/", meaning: "完整的", pos: "adj." },
+                { word: "terrifying", phonetic: "/ˈterɪfaɪɪŋ/", meaning: "可怕的", pos: "adj." },
+                { word: "pilot", phonetic: "/ˈpaɪlət/", meaning: "飞行员", pos: "n." },
+                { word: "fix", phonetic: "/fɪks/", meaning: "修理", pos: "v." },
+                { word: "carry on", phonetic: "/ˈkæri ɒn/", meaning: "继续", pos: "phr." },
+                { word: "metal", phonetic: "/ˈmetl/", meaning: "金属", pos: "n." },
+                { word: "disappear", phonetic: "/ˌdɪsəˈpɪə/", meaning: "消失", pos: "v." },
+                { word: "brought", phonetic: "/brɔːt/", meaning: "带来", pos: "v." },
+                { word: "leave behind", phonetic: "/liːv bɪˈhaɪnd/", meaning: "遗忘", pos: "phr." }
+            ],
+            "Unit5A": [
+                { word: "science", phonetic: "/ˈsaɪəns/", meaning: "科学", pos: "n." },
+                { word: "investigator", phonetic: "/ɪnˈvestɪɡeɪtə/", meaning: "调查员", pos: "n." },
+                { word: "training", phonetic: "/ˈtreɪnɪŋ/", meaning: "训练", pos: "n." },
+                { word: "work out", phonetic: "/wɜːk aʊt/", meaning: "解决", pos: "phr." },
+                { word: "disease", phonetic: "/dɪˈziːz/", meaning: "疾病", pos: "n." },
+                { word: "detective", phonetic: "/dɪˈtektɪv/", meaning: "侦探", pos: "n." },
+                { word: "expert", phonetic: "/ˈekspɜːt/", meaning: "专家", pos: "n." },
+                { word: "illnesses", phonetic: "/ˈɪlnəsɪz/", meaning: "疾病", pos: "n." },
+                { word: "cause", phonetic: "/kɔːz/", meaning: "原因", pos: "n." },
+                { word: "look for", phonetic: "/lʊk fɔː/", meaning: "寻找", pos: "phr." },
+                { word: "germs", phonetic: "/dʒɜːmz/", meaning: "细菌", pos: "n." },
+                { word: "bacteria", phonetic: "/bækˈtɪəriə/", meaning: "细菌", pos: "n." },
+                { word: "type", phonetic: "/taɪp/", meaning: "类型", pos: "n." },
+                { word: "dangerous", phonetic: "/ˈdeɪndʒərəs/", meaning: "危险的", pos: "adj." },
+                { word: "touch", phonetic: "/tʌtʃ/", meaning: "触摸", pos: "v." },
+                { word: "area", phonetic: "/ˈeəriə/", meaning: "区域", pos: "n." },
+                { word: "a list of", phonetic: "/ə lɪst ɒv/", meaning: "一份清单", pos: "phr." },
+                { word: "healthy", phonetic: "/ˈhelθi/", meaning: "健康的", pos: "adj." },
+                { word: "case closed", phonetic: "/keɪs kləʊzd/", meaning: "案件结束", pos: "phr." },
+                { word: "dirty", phonetic: "/ˈdɜːti/", meaning: "脏的", pos: "adj." },
+                { word: "fallen", phonetic: "/ˈfɔːlən/", meaning: "掉落的", pos: "adj." },
+                { word: "ground", phonetic: "/ɡraʊnd/", meaning: "地面", pos: "n." },
+                { word: "importantly", phonetic: "/ɪmˈpɔːtəntli/", meaning: "重要地", pos: "adv." },
+                { word: "kill", phonetic: "/kɪl/", meaning: "杀死", pos: "v." },
+                { word: "ending", phonetic: "/ˈendɪŋ/", meaning: "结尾", pos: "n." }
+            ],
+            "Unit5B": [
+                { word: "crime", phonetic: "/kraɪm/", meaning: "犯罪", pos: "n." },
+                { word: "scene", phonetic: "/siːn/", meaning: "现场", pos: "n." },
+                { word: "investigator", phonetic: "/ɪnˈvestɪɡeɪtə/", meaning: "调查员", pos: "n." },
+                { word: "clue", phonetic: "/kluː/", meaning: "线索", pos: "n." },
+                { word: "object", phonetic: "/ˈɒbdʒɪkt/", meaning: "物体", pos: "n." },
+                { word: "fingerprints", phonetic: "/ˈfɪŋɡəprɪnts/", meaning: "指纹", pos: "n." },
+                { word: "thief", phonetic: "/θiːf/", meaning: "小偷", pos: "n." },
+                { word: "broke into", phonetic: "/brəʊk ˈɪntuː/", meaning: "闯入", pos: "phr." },
+                { word: "expensive", phonetic: "/ɪkˈspensɪv/", meaning: "昂贵的", pos: "adj." },
+                { word: "items", phonetic: "/ˈaɪtəmz/", meaning: "物品", pos: "n." },
+                { word: "likely", phonetic: "/ˈlaɪkli/", meaning: "可能的", pos: "adj." },
+                { word: "vehicle", phonetic: "/ˈvɪəkəl/", meaning: "车辆", pos: "n." },
+                { word: "photograph", phonetic: "/ˈfəʊtəɡrɑːf/", meaning: "照片", pos: "n." },
+                { word: "pattern", phonetic: "/ˈpætən/", meaning: "图案", pos: "n." },
+                { word: "measure", phonetic: "/ˈmeʒə/", meaning: "测量", pos: "v." },
+                { word: "space", phonetic: "/speɪs/", meaning: "空间", pos: "n." },
+                { word: "steps", phonetic: "/steps/", meaning: "脚步", pos: "n." },
+                { word: "tire marks", phonetic: "/taɪə mɑːks/", meaning: "轮胎痕迹", pos: "n." },
+                { word: "lead to", phonetic: "/liːd tuː/", meaning: "导致", pos: "phr." },
+                { word: "passenger", phonetic: "/ˈpæsɪndʒə/", meaning: "乘客", pos: "n." },
+                { word: "alone", phonetic: "/əˈləʊn/", meaning: "独自的", pos: "adj." },
+                { word: "direction", phonetic: "/dəˈrekʃn/", meaning: "方向", pos: "n." },
+                { word: "compare", phonetic: "/kəmˈpeə/", meaning: "比较", pos: "v." },
+                { word: "contain", phonetic: "/kənˈteɪn/", meaning: "包含", pos: "v." },
+                { word: "match", phonetic: "/mætʃ/", meaning: "匹配", pos: "v." },
+                { word: "information", phonetic: "/ˌɪnfəˈmeɪʃn/", meaning: "信息", pos: "n." },
+                { word: "possible", phonetic: "/ˈpɒsəbl/", meaning: "可能的", pos: "adj." }
+            ],
+            "Unit6A": [
+                { word: "planting", phonetic: "/ˈplæntɪŋ/", meaning: "种植", pos: "n." },
+                { word: "planet", phonetic: "/ˈplænɪt/", meaning: "行星", pos: "n." },
+                { word: "presentation", phonetic: "/ˌpreznˈteɪʃn/", meaning: "演讲，展示", pos: "n." },
+                { word: "climate", phonetic: "/ˈklaɪmət/", meaning: "气候", pos: "n." },
+                { word: "deforestation", phonetic: "/ˌdiːˌfɒrɪˈsteɪʃn/", meaning: "砍伐森林", pos: "n." },
+                { word: "effect", phonetic: "/ɪˈfekt/", meaning: "影响，效果", pos: "n." },
+                { word: "challenge", phonetic: "/ˈtʃælɪndʒ/", meaning: "挑战", pos: "n." },
+                { word: "thought", phonetic: "/θɔːt/", meaning: "思考，想法", pos: "n." },
+                { word: "project", phonetic: "/ˈprɒdʒekt/", meaning: "项目", pos: "n." },
+                { word: "effort", phonetic: "/ˈefət/", meaning: "努力", pos: "n." },
+                { word: "result in", phonetic: "/rɪˈzʌlt ɪn/", meaning: "导致，造成", pos: "phr." },
+                { word: "classmate", phonetic: "/ˈklɑːsmeɪt/", meaning: "同学", pos: "n." },
+                { word: "began", phonetic: "/bɪˈɡæn/", meaning: "开始", pos: "v." },
+                { word: "news", phonetic: "/njuːz/", meaning: "新闻", pos: "n." },
+                { word: "spread", phonetic: "/spred/", meaning: "传播，扩散", pos: "v." },
+                { word: "invitation", phonetic: "/ˌɪnvɪˈteɪʃn/", meaning: "邀请", pos: "n." },
+                { word: "conference", phonetic: "/ˈkɒnfərəns/", meaning: "会议", pos: "n." },
+                { word: "trust", phonetic: "/trʌst/", meaning: "信任", pos: "n." },
+                { word: "save", phonetic: "/seɪv/", meaning: "保存", pos: "v." },
+                { word: "speech", phonetic: "/spiːtʃ/", meaning: "演讲", pos: "n." },
+                { word: "organization", phonetic: "/ˌɔːɡənaɪˈzeɪʃn/", meaning: "组织", pos: "n." },
+                { word: "member", phonetic: "/ˈmembə/", meaning: "成员", pos: "n." },
+                { word: "encourage", phonetic: "/ɪnˈkʌrɪdʒ/", meaning: "鼓励", pos: "v." },
+                { word: "goal", phonetic: "/ɡəʊl/", meaning: "目标", pos: "n." },
+                { word: "person", phonetic: "/ˈpɜːsn/", meaning: "人", pos: "n." },
+                { word: "continue", phonetic: "/kənˈtɪnjuː/", meaning: "继续", pos: "v." },
+                { word: "generation", phonetic: "/ˌdʒenəˈreɪʃn/", meaning: "代，世代", pos: "n." },
+                { word: "current", phonetic: "/ˈkʌrənt/", meaning: "当前的", pos: "adj." }
+            ],
+            "Unit6B": [
+                { word: "species", phonetic: "/ˈspiːʃiːz/", meaning: "物种", pos: "n." },
+                { word: "carnivorous", phonetic: "/kɑːˈnɪvərəs/", meaning: "食肉的", pos: "adj." },
+                { word: "energy", phonetic: "/ˈenədʒi/", meaning: "能量", pos: "n." },
+                { word: "fatal", phonetic: "/ˈfeɪtl/", meaning: "致命的", pos: "adj." },
+                { word: "attraction", phonetic: "/əˈtrækʃn/", meaning: "吸引力；景点", pos: "n." },
+                { word: "speed", phonetic: "/spiːd/", meaning: "速度", pos: "n." },
+                { word: "forest", phonetic: "/ˈfɒrɪst/", meaning: "森林", pos: "n." },
+                { word: "nectar", phonetic: "/ˈnektə/", meaning: "花蜜", pos: "n." },
+                { word: "leaf", phonetic: "/liːf/", meaning: "叶子", pos: "n." },
+                { word: "liquid", phonetic: "/ˈlɪkwɪd/", meaning: "液体", pos: "n." },
+                { word: "suddenly", phonetic: "/ˈsʌdənli/", meaning: "突然地", pos: "adv." },
+                { word: "lock", phonetic: "/lɒk/", meaning: "锁，锁住", pos: "n./v." },
+                { word: "caught", phonetic: "/kɔːt/", meaning: "捕捉，抓住", pos: "v." },
+                { word: "escape", phonetic: "/ɪˈskeɪp/", meaning: "逃脱", pos: "v." },
+                { word: "perhaps", phonetic: "/pəˈhæps/", meaning: "也许", pos: "adv." },
+                { word: "famous", phonetic: "/ˈfeɪməs/", meaning: "著名的", pos: "adj." },
+                { word: "recently", phonetic: "/ˈriːsntli/", meaning: "最近地", pos: "adv." },
+                { word: "believe", phonetic: "/bɪˈliːv/", meaning: "相信", pos: "v." },
+                { word: "secret", phonetic: "/ˈsiːkrət/", meaning: "秘密", pos: "n." },
+                { word: "electrical", phonetic: "/ɪˈlektrɪkl/", meaning: "电的，电气", pos: "adj." },
+                { word: "along", phonetic: "/əˈlɒŋ/", meaning: "沿着", pos: "prep." },
+                { word: "create", phonetic: "/kriˈeɪt/", meaning: "创造", pos: "v." },
+                { word: "signal", phonetic: "/ˈsɪɡnəl/", meaning: "信号", pos: "n." },
+                { word: "continue", phonetic: "/kənˈtɪnjuː/", meaning: "继续", pos: "v." },
+                { word: "within", phonetic: "/wɪˈðɪn/", meaning: "在…之内", pos: "prep." },
+                { word: "difference", phonetic: "/ˈdɪfrəns/", meaning: "差异", pos: "n." },
+                { word: "survival", phonetic: "/səˈvaɪvl/", meaning: "生存", pos: "n." },
+                { word: "chance", phonetic: "/tʃɑːns/", meaning: "机会，可能性", pos: "n." }
+            ],
+            "Unit7A": [
+                { word: "audience", phonetic: "/ˈɔːdiəns/", meaning: "观众", pos: "n." },
+                { word: "performance", phonetic: "/pəˈfɔːməns/", meaning: "表演", pos: "n." },
+                { word: "relaxing", phonetic: "/rɪˈlæksɪŋ/", meaning: "令人放松的", pos: "adj." },
+                { word: "interesting", phonetic: "/ˈɪntrəstɪŋ/", meaning: "有趣的", pos: "adj." },
+                { word: "interested", phonetic: "/ˈɪntrəstɪd/", meaning: "有兴趣的", pos: "adj." },
+                { word: "contain", phonetic: "/kənˈteɪn/", meaning: "包含", pos: "v." },
+                { word: "thought", phonetic: "/θɔːt/", meaning: "思想，想法", pos: "n." },
+                { word: "memory", phonetic: "/ˈmeməri/", meaning: "记忆", pos: "n." },
+                { word: "last", phonetic: "/lɑːst/", meaning: "持续；最后的", pos: "v./adj." },
+                { word: "remember", phonetic: "/rɪˈmembə/", meaning: "记得", pos: "v." },
+                { word: "scientist", phonetic: "/ˈsaɪəntɪst/", meaning: "科学家", pos: "n." },
+                { word: "figure out", phonetic: "/ˈfɪɡə aʊt/", meaning: "弄清楚，理解", pos: "v." },
+                { word: "problem", phonetic: "/ˈprɒbləm/", meaning: "问题", pos: "n." },
+                { word: "past", phonetic: "/pɑːst/", meaning: "过去", pos: "n." },
+                { word: "event", phonetic: "/ɪˈvent/", meaning: "事件", pos: "n." },
+                { word: "useful", phonetic: "/ˈjuːsfl/", meaning: "有用的", pos: "adj." },
+                { word: "result", phonetic: "/rɪˈzʌlt/", meaning: "结果", pos: "n." },
+                { word: "embarrassing", phonetic: "/ɪmˈbærəsɪŋ/", meaning: "令人尴尬的", pos: "adj." },
+                { word: "embarrassed", phonetic: "/ɪmˈbærəst/", meaning: "感到尴尬的", pos: "adj." },
+                { word: "period", phonetic: "/ˈpɪəriəd/", meaning: "时期，句号", pos: "n." },
+                { word: "probably", phonetic: "/ˈprɒbəbli/", meaning: "可能，或许", pos: "adv." },
+                { word: "mean", phonetic: "/miːn/", meaning: "意思是；刻薄的", pos: "v./adj." },
+                { word: "worrying", phonetic: "/ˈwʌriɪŋ/", meaning: "令人担忧的", pos: "adj." },
+                { word: "worried", phonetic: "/ˈwʌrid/", meaning: "担心的", pos: "adj." },
+                { word: "important", phonetic: "/ɪmˈpɔːtnt/", meaning: "重要的", pos: "adj." },
+                { word: "prepare", phonetic: "/prɪˈpeə/", meaning: "准备", pos: "v." },
+                { word: "deal with", phonetic: "/diːl wɪð/", meaning: "处理，应对", pos: "phr." }
+            ],
+            "Unit7B": [
+                { word: "unusual", phonetic: "/ʌnˈjuːʒuəl/", meaning: "不寻常的", pos: "adj." },
+                { word: "area", phonetic: "/ˈeəriə/", meaning: "区域，地方", pos: "n." },
+                { word: "completely", phonetic: "/kəmˈpliːtli/", meaning: "完全地", pos: "adv." },
+                { word: "impossible", phonetic: "/ɪmˈpɒsəbl/", meaning: "不可能的", pos: "adj." },
+                { word: "believe", phonetic: "/bɪˈliːv/", meaning: "相信", pos: "v." },
+                { word: "minds", phonetic: "/maɪndz/", meaning: "思维，思想", pos: "n." },
+                { word: "mistake", phonetic: "/mɪˈsteɪk/", meaning: "错误", pos: "n." },
+                { word: "get confused", phonetic: "/ɡet kənˈfjuːzd/", meaning: "感到困惑", pos: "phr." },
+                { word: "optical", phonetic: "/ˈɒptɪkl/", meaning: "光学的", pos: "adj." },
+                { word: "illusion", phonetic: "/ɪˈluːʒn/", meaning: "幻觉，错觉", pos: "n." },
+                { word: "trick", phonetic: "/trɪk/", meaning: "骗局，伎俩", pos: "n." },
+                { word: "play a trick on", phonetic: "/pleɪ ə trɪk ɒn/", meaning: "欺骗某人，开玩笑", pos: "phr." },
+                { word: "compare", phonetic: "/kəmˈpeə/", meaning: "比较", pos: "v." },
+                { word: "personal", phonetic: "/ˈpɜːsənl/", meaning: "个人的", pos: "adj." },
+                { word: "straight", phonetic: "/streɪt/", meaning: "直的，直接的", pos: "adj." },
+                { word: "edge", phonetic: "/edʒ/", meaning: "边缘", pos: "n." },
+                { word: "therefore", phonetic: "/ˈðeəfɔː/", meaning: "因此，所以", pos: "adv." },
+                { word: "exactly", phonetic: "/ɪɡˈzæktli/", meaning: "精确地，确切地", pos: "adv." },
+                { word: "notice", phonetic: "/ˈnəʊtɪs/", meaning: "注意到，留意", pos: "v." },
+                { word: "look closely", phonetic: "/lʊk ˈkləʊsli/", meaning: "仔细看", pos: "phr." },
+                { word: "appear", phonetic: "/əˈpɪə/", meaning: "出现，似乎", pos: "v." },
+                { word: "decide", phonetic: "/dɪˈsaɪd/", meaning: "决定", pos: "v." },
+                { word: "image", phonetic: "/ˈɪmɪdʒ/", meaning: "图像", pos: "n." },
+                { word: "movement", phonetic: "/ˈmuːvmənt/", meaning: "动作，运动", pos: "n." },
+                { word: "pattern", phonetic: "/ˈpætən/", meaning: "模式，图案", pos: "n." },
+                { word: "common", phonetic: "/ˈkɒmən/", meaning: "普通的，常见的", pos: "adj." },
+                { word: "correctly", phonetic: "/kəˈrektli/", meaning: "正确地", pos: "adv." }
+            ],
+            "Unit8A": [
+                { word: "Antarctica", phonetic: "/ænˈtæktɪkə/", meaning: "南极洲", pos: "n." },
+                { word: "emperor penguins", phonetic: "/ˈempərə ˈpeŋɡwɪnz/", meaning: "皇帝企鹅", pos: "n." },
+                { word: "largest", phonetic: "/ˈlɑːdʒɪst/", meaning: "最大的", pos: "adj." },
+                { word: "adult", phonetic: "/ˈædʌlt/", meaning: "成年人，成熟的", pos: "n./adj." },
+                { word: "weigh", phonetic: "/weɪ/", meaning: "称重", pos: "v." },
+                { word: "cover", phonetic: "/ˈkʌvə/", meaning: "覆盖，遮盖", pos: "v." },
+                { word: "area", phonetic: "/ˈeəriə/", meaning: "区域，地方", pos: "n." },
+                { word: "lay eggs", phonetic: "/leɪ eɡz/", meaning: "下蛋", pos: "phr." },
+                { word: "special", phonetic: "/ˈspeʃl/", meaning: "特别的，特殊的", pos: "adj." },
+                { word: "a piece of", phonetic: "/ə piːs ɒv/", meaning: "一片，一块", pos: "phr." },
+                { word: "skin", phonetic: "/skɪn/", meaning: "皮肤，表皮", pos: "n." },
+                { word: "brood pouch", phonetic: "/bruːd paʊtʃ/", meaning: "孵育袋", pos: "n." },
+                { word: "share", phonetic: "/ʃeə/", meaning: "分享，分担", pos: "v." },
+                { word: "protect", phonetic: "/prəˈtekt/", meaning: "保护", pos: "v." },
+                { word: "condition", phonetic: "/kənˈdɪʃn/", meaning: "状况，条件", pos: "n." },
+                { word: "leave for", phonetic: "/liːv fɔː/", meaning: "离开去某地", pos: "phr." },
+                { word: "return", phonetic: "/rɪˈtɜːn/", meaning: "返回", pos: "v." },
+                { word: "difficult", phonetic: "/ˈdɪfɪkəlt/", meaning: "困难的", pos: "adj." },
+                { word: "freeze", phonetic: "/friːz/", meaning: "冻结，冰冻", pos: "v." },
+                { word: "parents", phonetic: "/ˈpeərənts/", meaning: "父母", pos: "n." },
+                { word: "careful", phonetic: "/ˈkeəfl/", meaning: "小心的，谨慎的", pos: "adj." },
+                { word: "take turns", phonetic: "/teɪk tɜːnz/", meaning: "轮流", pos: "phr." },
+                { word: "bring back", phonetic: "/brɪŋ bæk/", meaning: "带回，归还", pos: "phr." },
+                { word: "rapidly", phonetic: "/ˈræpɪdli/", meaning: "快速地", pos: "adv." },
+                { word: "on its own", phonetic: "/ɒn ɪts əʊn/", meaning: "独自", pos: "phr." },
+                { word: "enter", phonetic: "/ˈentə/", meaning: "进入", pos: "v." },
+                { word: "start", phonetic: "/stɑːt/", meaning: "开始", pos: "v." }
+            ],
+            "Unit8B": [
+                { word: "emotion", phonetic: "/ɪˈməʊʃn/", meaning: "情感，情绪", pos: "n." },
+                { word: "fear", phonetic: "/fɪə/", meaning: "害怕，恐惧", pos: "n." },
+                { word: "relationship", phonetic: "/rɪˈleɪʃnʃɪp/", meaning: "关系，联络", pos: "n." },
+                { word: "similar", phonetic: "/ˈsɪmɪlə/", meaning: "相似的", pos: "adj." },
+                { word: "sense of humor", phonetic: "/sens ɒv ˈhjuːmə/", meaning: "幽默感", pos: "n." },
+                { word: "in fact", phonetic: "/ɪn fækt/", meaning: "事实上", pos: "phr." },
+                { word: "clearly", phonetic: "/ˈklɪəli/", meaning: "清楚地，明白地", pos: "adv." },
+                { word: "laugh at", phonetic: "/lɑːf æt/", meaning: "嘲笑，笑话", pos: "phr." },
+                { word: "disappointed", phonetic: "/ˌdɪsəˈpɔɪntɪd/", meaning: "失望的", pos: "adj." },
+                { word: "enjoy", phonetic: "/ɪnˈdʒɔɪ/", meaning: "享受，喜欢", pos: "v." },
+                { word: "carefully", phonetic: "/ˈkeəfəli/", meaning: "小心地，仔细地", pos: "adv." },
+                { word: "place", phonetic: "/pleɪs/", meaning: "地点，位置", pos: "n." },
+                { word: "behavior", phonetic: "/bɪˈheɪvjə/", meaning: "行为，举止", pos: "n." },
+                { word: "purpose", phonetic: "/ˈpɜːpəs/", meaning: "目的，原因", pos: "n." },
+                { word: "hilarious", phonetic: "/hɪˈleəriəs/", meaning: "十分滑稽的，极好笑的", pos: "adj." },
+                { word: "recent", phonetic: "/ˈriːsnt/", meaning: "最近的", pos: "adj." },
+                { word: "research", phonetic: "/rɪˈsɜːtʃ/", meaning: "研究，调查", pos: "n." },
+                { word: "psychologist", phonetic: "/saɪˈkɒlədʒɪst/", meaning: "心理学家", pos: "n." },
+                { word: "perhaps", phonetic: "/pəˈhæps/", meaning: "也许，可能", pos: "adv." },
+                { word: "record", phonetic: "/ˈrekɔːd/", meaning: "记录，档案", pos: "n." }
+            ],
+            "Unit9A": [
+                { word: "poem", phonetic: "/pəʊm/", meaning: "诗歌", pos: "n." },
+                { word: "perhaps", phonetic: "/pəˈhæps/", meaning: "也许，可能", pos: "adv." },
+                { word: "expression", phonetic: "/ɪkˈspreʃn/", meaning: "表达，表现", pos: "n." },
+                { word: "emperor", phonetic: "/ˈempərə/", meaning: "皇帝", pos: "n." },
+                { word: "together", phonetic: "/təˈɡeðə/", meaning: "一起，合在一起", pos: "adv." },
+                { word: "during", phonetic: "/ˈdjʊərɪŋ/", meaning: "在...期间", pos: "prep." },
+                { word: "birth", phonetic: "/bɜːθ/", meaning: "出生", pos: "n." },
+                { word: "promise", phonetic: "/ˈprɒmɪs/", meaning: "承诺，答应", pos: "n./v." },
+                { word: "remember", phonetic: "/rɪˈmembə/", meaning: "记得，记住", pos: "v." },
+                { word: "monument", phonetic: "/ˈmɒnjʊmənt/", meaning: "纪念碑，纪念物", pos: "n." },
+                { word: "huge", phonetic: "/hjuːdʒ/", meaning: "巨大的", pos: "adj." },
+                { word: "central", phonetic: "/ˈsentrəl/", meaning: "中心的，中央的", pos: "adj." },
+                { word: "finish", phonetic: "/ˈfɪnɪʃ/", meaning: "完成，结束", pos: "v." },
+                { word: "prison", phonetic: "/ˈprɪzn/", meaning: "监狱", pos: "n." },
+                { word: "death", phonetic: "/deθ/", meaning: "死亡", pos: "n." },
+                { word: "legend", phonetic: "/ˈledʒənd/", meaning: "传奇，传说", pos: "n." },
+                { word: "complete", phonetic: "/kəmˈpliːt/", meaning: "完成，结束", pos: "v." },
+                { word: "supposedly", phonetic: "/səˈpəʊzɪdli/", meaning: "据说，推测上", pos: "adv." },
+                { word: "interesting", phonetic: "/ˈɪntrəstɪŋ/", meaning: "有趣的，吸引人的", pos: "adj." },
+                { word: "probably", phonetic: "/ˈprɒbəbli/", meaning: "可能，大概", pos: "adv." },
+                { word: "sadly", phonetic: "/ˈsædli/", meaning: "悲伤地，不幸地", pos: "adv." },
+                { word: "stand", phonetic: "/stænd/", meaning: "站立，站着", pos: "v." },
+                { word: "tourist", phonetic: "/ˈtʊərɪst/", meaning: "游客，旅游者", pos: "n." },
+                { word: "break", phonetic: "/breɪk/", meaning: "打破，休息", pos: "v." }
+            ],
+            "Unit9B": [
+                { word: "sight", phonetic: "/saɪt/", meaning: "视力；景象", pos: "n." },
+                { word: "cathedral", phonetic: "/kəˈθiːdrəl/", meaning: "大教堂", pos: "n." },
+                { word: "dome", phonetic: "/dəʊm/", meaning: "圆顶，穹顶", pos: "n." },
+                { word: "project", phonetic: "/ˈprɒdʒekt/", meaning: "项目；计划", pos: "n./v." },
+                { word: "difficult", phonetic: "/ˈdɪfɪkəlt/", meaning: "困难的", pos: "adj." },
+                { word: "belong to", phonetic: "/bɪˈlɒŋ tuː/", meaning: "属于", pos: "v." },
+                { word: "complete", phonetic: "/kəmˈpliːt/", meaning: "完成，结束", pos: "v." },
+                { word: "concrete", phonetic: "/ˈkɒŋkriːt/", meaning: "混凝土；具体的", pos: "n./adj." },
+                { word: "wider", phonetic: "/ˈwaɪdə/", meaning: "更宽的，广泛的", pos: "adj." },
+                { word: "therefore", phonetic: "/ˈðeəfɔː/", meaning: "因此，所以", pos: "adv." },
+                { word: "remain", phonetic: "/rɪˈmeɪn/", meaning: "保持，留下", pos: "v." },
+                { word: "promise", phonetic: "/ˈprɒmɪs/", meaning: "承诺，答应", pos: "n./v." },
+                { word: "solution", phonetic: "/səˈluːʃn/", meaning: "解决方法，答案", pos: "n." },
+                { word: "inner", phonetic: "/ˈɪnə/", meaning: "内部的，内在的", pos: "adj." },
+                { word: "outer", phonetic: "/ˈaʊtə/", meaning: "外部的，外面的", pos: "adj." },
+                { word: "light", phonetic: "/laɪt/", meaning: "光；轻的", pos: "n./adj." },
+                { word: "material", phonetic: "/məˈtɪəriəl/", meaning: "材料；物质的", pos: "n./adj." },
+                { word: "upwards", phonetic: "/ˈʌpwədz/", meaning: "向上，朝上", pos: "adv." },
+                { word: "bricks", phonetic: "/brɪks/", meaning: "砖块", pos: "n." },
+                { word: "lift", phonetic: "/lɪft/", meaning: "举起，提升", pos: "v." },
+                { word: "invent", phonetic: "/ɪnˈvent/", meaning: "发明，创造", pos: "v." },
+                { word: "design", phonetic: "/dɪˈzaɪn/", meaning: "设计，构思", pos: "v./n." },
+                { word: "expert", phonetic: "/ˈekspɜːt/", meaning: "专家；专业的", pos: "n./adj." },
+                { word: "incredible", phonetic: "/ɪnˈkredəbl/", meaning: "难以置信的", pos: "adj." },
+                { word: "structure", phonetic: "/ˈstrʌktʃə/", meaning: "结构，构造", pos: "n." }
+            ],
+            "Unit10A": [
+                { word: "wild", phonetic: "/waɪld/", meaning: "狂野的", pos: "adj." },
+                { word: "forecast", phonetic: "/ˈfɔːkɑːst/", meaning: "预测，预报", pos: "n." },
+                { word: "predict", phonetic: "/prɪˈdɪkt/", meaning: "预言，预测", pos: "v." },
+                { word: "prepare", phonetic: "/prɪˈpeə/", meaning: "准备", pos: "v." },
+                { word: "large", phonetic: "/lɑːdʒ/", meaning: "大的", pos: "adj." },
+                { word: "area", phonetic: "/ˈeəriə/", meaning: "地区，区域", pos: "n." },
+                { word: "flood", phonetic: "/flʌd/", meaning: "洪水；淹没", pos: "n./v." },
+                { word: "receive", phonetic: "/rɪˈsiːv/", meaning: "接收，收到", pos: "v." },
+                { word: "float", phonetic: "/fləʊt/", meaning: "漂浮", pos: "v." },
+                { word: "at least", phonetic: "/æt liːst/", meaning: "至少", pos: "phr." },
+                { word: "cause", phonetic: "/kɔːz/", meaning: "引起；原因", pos: "v./n." },
+                { word: "drought", phonetic: "/draʊt/", meaning: "干旱", pos: "n." },
+                { word: "Brazil", phonetic: "/brəˈzɪl/", meaning: "巴西", pos: "n." },
+                { word: "Australia", phonetic: "/əˈstreɪliə/", meaning: "澳大利亚", pos: "n." },
+                { word: "hurricane", phonetic: "/ˈhʌrɪkən/", meaning: "飓风", pos: "n." },
+                { word: "tornado", phonetic: "/tɔːˈneɪdəʊ/", meaning: "龙卷风", pos: "n." },
+                { word: "power", phonetic: "/ˈpaʊə/", meaning: "力量，电力", pos: "n." },
+                { word: "financial", phonetic: "/faɪˈnænʃl/", meaning: "财务的", pos: "adj." },
+                { word: "cost", phonetic: "/kɒst/", meaning: "成本；花费", pos: "n./v." },
+                { word: "natural", phonetic: "/ˈnætʃrəl/", meaning: "自然的", pos: "adj." },
+                { word: "blame", phonetic: "/bleɪm/", meaning: "责备，归咎于", pos: "v." },
+                { word: "human activity", phonetic: "/ˈhjuːmən ækˈtɪvəti/", meaning: "人类活动", pos: "n." },
+                { word: "global warming", phonetic: "/ˈɡləʊbl ˈwɔːmɪŋ/", meaning: "全球变暖", pos: "n." },
+                { word: "temperature", phonetic: "/ˈtemprətʃə/", meaning: "温度", pos: "n." },
+                { word: "frequent", phonetic: "/ˈfriːkwənt/", meaning: "频繁的", pos: "adj." },
+                { word: "likely", phonetic: "/ˈlaɪkli/", meaning: "可能的", pos: "adj." },
+                { word: "expert", phonetic: "/ˈekspɜːt/", meaning: "专家", pos: "n." },
+                { word: "save", phonetic: "/seɪv/", meaning: "拯救；保存", pos: "v." }
+            ],
+            "Unit10B": [
+                { word: "weird", phonetic: "/wɪəd/", meaning: "奇怪的，怪异的", pos: "adj." },
+                { word: "strike", phonetic: "/straɪk/", meaning: "击打，袭击", pos: "v." },
+                { word: "hurricane", phonetic: "/ˈhʌrɪkən/", meaning: "飓风", pos: "n." },
+                { word: "drought", phonetic: "/draʊt/", meaning: "干旱", pos: "n." },
+                { word: "deliver", phonetic: "/dɪˈlɪvə/", meaning: "递送，交付", pos: "v." },
+                { word: "unusual", phonetic: "/ʌnˈjuːʒuəl/", meaning: "不寻常的", pos: "adj." },
+                { word: "Serbia", phonetic: "/ˈsɜːbiə/", meaning: "塞尔维亚", pos: "n." },
+                { word: "warning", phonetic: "/ˈwɔːnɪŋ/", meaning: "警告", pos: "n." },
+                { word: "creature", phonetic: "/ˈkriːtʃə/", meaning: "生物，动物", pos: "n." },
+                { word: "local", phonetic: "/ˈləʊkl/", meaning: "当地的，局部的", pos: "adj." },
+                { word: "explode", phonetic: "/ɪkˈspləʊd/", meaning: "爆炸", pos: "v." },
+                { word: "tornado", phonetic: "/tɔːˈneɪdəʊ/", meaning: "龙卷风", pos: "n." },
+                { word: "suck up", phonetic: "/sʌk ʌp/", meaning: "吸起，吸走", pos: "v." },
+                { word: "drop", phonetic: "/drɒp/", meaning: "掉落，下降", pos: "v." },
+                { word: "dangerous", phonetic: "/ˈdeɪndʒərəs/", meaning: "危险的", pos: "adj." },
+                { word: "actually", phonetic: "/ˈæktʃuəli/", meaning: "实际上", pos: "adv." },
+                { word: "wildfire", phonetic: "/ˈwaɪldfaɪə/", meaning: "野火", pos: "n." },
+                { word: "replace", phonetic: "/rɪˈpleɪs/", meaning: "替代，取代", pos: "v." },
+                { word: "skeletons", phonetic: "/ˈskelɪtənz/", meaning: "骨骼，骨架", pos: "n." },
+                { word: "Himalayas", phonetic: "/ˌhɪməˈleɪəz/", meaning: "喜马拉雅山", pos: "n." },
+                { word: "giant", phonetic: "/ˈdʒaɪənt/", meaning: "巨大的；巨人", pos: "adj./n." },
+                { word: "hailstone", phonetic: "/ˈheɪlstəʊn/", meaning: "冰雹", pos: "n." },
+                { word: "raindrop", phonetic: "/ˈreɪndrɒp/", meaning: "雨滴", pos: "n." },
+                { word: "increase", phonetic: "/ɪnˈkriːs/", meaning: "增加", pos: "v." },
+                { word: "result", phonetic: "/rɪˈzʌlt/", meaning: "结果", pos: "n." },
+                { word: "skull", phonetic: "/skʌl/", meaning: "颅骨，头骨", pos: "n." }
+            ]
+        };
+
+        // ---------- 全局状态 ----------
+        let currentUnit = 'Unit1A';
+        let currentWordIndex = 0;
+        let words = COURSE_DATA['Unit1A'] || [];
+        let isFlipped = false;
+        let bookmark = JSON.parse(localStorage.getItem('wordBookmark') || '[]');
+        let isTestMode = false;
+        let testWordIndex = 0;
+        let testOptions = [];
+
+        // DOM 引用
+        const cardWrapper = document.getElementById('cardWrapper');
+        const flashcard = document.getElementById('flashcard');
+        const wordEn = document.getElementById('wordEn');
+        const wordPhonetic = document.getElementById('wordPhonetic');
+        const wordMeaning = document.getElementById('wordMeaning');
+        const wordPos = document.getElementById('wordPos');
+        const starBtn = document.getElementById('starBtn');
+        const bookmarkBtn = document.getElementById('bookmarkBtn');
+        const modal = document.getElementById('bookmarkModal');
+        const closeBookmark = document.getElementById('closeBookmark');
+        const bookmarkList = document.getElementById('bookmarkList');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const randomBtn = document.getElementById('randomBtn');
+        const testToggleBtn = document.getElementById('testToggleBtn');
+        const testArea = document.getElementById('testArea');
+        const testWord = document.getElementById('testWord');
+        const testOptionsDiv = document.getElementById('testOptions');
+        const testFeedback = document.getElementById('testFeedback');
+
+        // ---------- 辅助 ----------
+        function updateCard() {
+            if (!words.length) return;
+            const w = words[currentWordIndex];
+            wordEn.textContent = w.word || '';
+            wordPhonetic.textContent = w.phonetic || '';
+            wordMeaning.textContent = w.meaning || '';
+            wordPos.textContent = w.pos || '';
+            // 翻转状态重置
+            if (isFlipped) {
+                flashcard.classList.remove('flipped');
+                isFlipped = false;
+            }
+            updateStar();
+            // 自动朗读 (英文)
+            speakWord(w.word);
+        }
+
+        function speakWord(text) {
+            if (!text) return;
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                speechSynthesis.cancel();
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function updateStar() {
+            const w = words[currentWordIndex];
+            if (!w) return;
+            const isStarred = bookmark.some(b => b.word === w.word && b.unit === currentUnit);
+            starBtn.textContent = isStarred ? '⭐' : '☆';
+            starBtn.classList.toggle('active', isStarred);
+        }
+
+        function toggleBookmark() {
+            const w = words[currentWordIndex];
+            if (!w) return;
+            const idx = bookmark.findIndex(b => b.word === w.word && b.unit === currentUnit);
+            if (idx >= 0) {
+                bookmark.splice(idx, 1);
+            } else {
+                bookmark.push({ word: w.word, unit: currentUnit, meaning: w.meaning, phonetic: w.phonetic });
+            }
+            localStorage.setItem('wordBookmark', JSON.stringify(bookmark));
+            updateStar();
+        }
+
+        function renderBookmarkModal() {
+            if (!bookmark.length) {
+                bookmarkList.innerHTML = '<div class="empty-msg">✨ 还没有收藏单词</div>';
+                return;
+            }
+            bookmarkList.innerHTML = bookmark.map((item, i) => `
+                <div class="word-item">
+                    <span>${item.word} <span style="color:#64748b;font-weight:400;">${item.meaning}</span></span>
+                    <button class="remove-word" data-index="${i}">移除</button>
+                </div>
+            `).join('');
+            // 移除事件
+            document.querySelectorAll('.remove-word').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const idx = parseInt(this.dataset.index, 10);
+                    bookmark.splice(idx, 1);
+                    localStorage.setItem('wordBookmark', JSON.stringify(bookmark));
+                    renderBookmarkModal();
+                    updateStar();
+                });
+            });
+        }
+
+        function switchUnit(unit) {
+            currentUnit = unit;
+            words = COURSE_DATA[unit] || [];
+            if (!words.length) words = COURSE_DATA['Unit1A'];
+            currentWordIndex = 0;
+            isFlipped = false;
+            flashcard.classList.remove('flipped');
+            updateCard();
+            // 更新课程按钮高亮
+            document.querySelectorAll('.course-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.unit === unit);
+            });
+            // 若测试模式开启则刷新测试
+            if (isTestMode) initTest();
+        }
+
+        // 随机跳转 (当前课程)
+        function randomWord() {
+            if (words.length < 2) return;
+            let newIdx;
+            do {
+                newIdx = Math.floor(Math.random() * words.length);
+            } while (newIdx === currentWordIndex && words.length > 1);
+            currentWordIndex = newIdx;
+            updateCard();
+        }
+
+        // ---------- 测试逻辑 ----------
+        function initTest() {
+            if (!words.length) return;
+            testWordIndex = Math.floor(Math.random() * words.length);
+            generateTest();
+        }
+
+        function generateTest() {
+            const correct = words[testWordIndex];
+            if (!correct) return;
+            // 随机选两个不同单词的释义 (包括正确)
+            let candidates = [correct];
+            let pool = words.filter((_, i) => i !== testWordIndex);
+            // 打乱取两个
+            const shuffled = pool.sort(() => Math.random() - 0.5);
+            for (let i = 0; i < Math.min(2, shuffled.length); i++) {
+                candidates.push(shuffled[i]);
+            }
+            // 打乱选项
+            candidates = candidates.sort(() => Math.random() - 0.5);
+            testOptions = candidates.map(w => w.meaning);
+            testWord.textContent = correct.word;
+            testOptionsDiv.innerHTML = testOptions.map(opt => 
+                `<button class="test-opt" data-meaning="${opt}">${opt}</button>`
+            ).join('');
+            testFeedback.textContent = '';
+            // 绑定事件
+            document.querySelectorAll('.test-opt').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const selected = this.dataset.meaning;
+                    const isCorrect = selected === correct.meaning;
+                    if (isCorrect) {
+                        this.classList.add('correct');
+                        testFeedback.textContent = '✅ 正确！';
+                        testFeedback.style.color = '#16a34a';
+                        setTimeout(() => {
+                            initTest(); // 下一题
+                        }, 600);
+                    } else {
+                        this.classList.add('wrong');
+                        testFeedback.textContent = `❌ 正确答案是: ${correct.meaning}`;
+                        testFeedback.style.color = '#dc2626';
+                        // 自动下一题 (稍慢)
+                        setTimeout(() => {
+                            initTest();
+                        }, 1200);
+                    }
+                    // 禁用所有选项避免重复点击
+                    document.querySelectorAll('.test-opt').forEach(b => b.disabled = true);
+                });
+            });
+        }
+
+        // ---------- 事件绑定 ----------
+        // 课程切换
+        document.querySelectorAll('.course-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const unit = this.dataset.unit;
+                if (unit === currentUnit) return;
+                switchUnit(unit);
+                if (isTestMode) initTest();
+            });
+        });
+
+        // 卡片翻转 (点击卡片)
+        cardWrapper.addEventListener('click', function(e) {
+            // 如果点击的是按钮则忽略
+            if (e.target.closest('.icon-btn') || e.target.closest('.ctrl-btn')) return;
+            isFlipped = !isFlipped;
+            flashcard.classList.toggle('flipped', isFlipped);
+        });
+
+        // 点击单词朗读 (仅英文)
+        wordEn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const w = words[currentWordIndex];
+            if (w) speakWord(w.word);
+        });
+
+        // 星号按钮
+        starBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleBookmark();
+        });
+
+        // 生词本
+        bookmarkBtn.addEventListener('click', function() {
+            renderBookmarkModal();
+            modal.classList.add('open');
+        });
+        closeBookmark.addEventListener('click', function() {
+            modal.classList.remove('open');
+        });
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) modal.classList.remove('open');
+        });
+
+        // 上一/下一/随机
+        prevBtn.addEventListener('click', function() {
+            if (!words.length) return;
+            currentWordIndex = (currentWordIndex - 1 + words.length) % words.length;
+            updateCard();
+        });
+        nextBtn.addEventListener('click', function() {
+            if (!words.length) return;
+            currentWordIndex = (currentWordIndex + 1) % words.length;
+            updateCard();
+        });
+        randomBtn.addEventListener('click', randomWord);
+
+        // 测试切换
+        testToggleBtn.addEventListener('click', function() {
+            isTestMode = !isTestMode;
+            testArea.classList.toggle('active', isTestMode);
+            if (isTestMode) {
+                initTest();
+            } else {
+                testFeedback.textContent = '';
+                testOptionsDiv.innerHTML = '';
+            }
+        });
+
+        // 初始化
+        switchUnit('Unit1A');
+    })();
+</script>
+</body>
+</html>
